@@ -1,11 +1,11 @@
-import { Car, Home, Smartphone, Briefcase, ShoppingBag, Baby, Sofa, Tools } from "lucide-react";
+import { Car, Home, Smartphone, Briefcase, ShoppingBag, Baby, Sofa, Wrench } from "lucide-react";
 
 const categories = [
   { name: "Транспорт", icon: <Car className="h-5 w-5" /> },
   { name: "Недвижимость", icon: <Home className="h-5 w-5" /> },
   { name: "Электроника", icon: <Smartphone className="h-5 w-5" /> },
   { name: "Работа", icon: <Briefcase className="h-5 w-5" /> },
-  { name: "Услуги", icon: <Tools className="h-5 w-5" /> },
+  { name: "Услуги", icon: <Wrench className="h-5 w-5" /> },
   { name: "Личные вещи", icon: <ShoppingBag className="h-5 w-5" /> },
   { name: "Для дома и дачи", icon: <Sofa className="h-5 w-5" /> },
   { name: "Товары для детей", icon: <Baby className="h-5 w-5" /> }
