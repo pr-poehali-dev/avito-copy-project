@@ -1,6 +1,7 @@
-import { Search, Heart, Bell, MessageSquare, User, MapPin, Menu } from "lucide-react";
+import { Search, Heart, Bell, MessageSquare, Menu, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import ProfileButton from "./ProfileButton";
 
 const Header = () => {
   return (
@@ -47,10 +48,7 @@ const Header = () => {
               <span className="ml-1 text-sm">Уведомления</span>
             </button>
             
-            <button className="flex items-center text-gray-700">
-              <User className="h-5 w-5" />
-              <span className="ml-1 text-sm hidden md:inline">Профиль</span>
-            </button>
+            <ProfileButton />
             
             <Button className="avito-button hidden md:block">
               Разместить объявление
