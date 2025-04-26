@@ -5,9 +5,10 @@ import { toast } from "@/components/ui/use-toast";
 
 type VideoVerificationProps = {
   onClose: () => void;
+  phoneNumber: string;
 };
 
-const VideoVerification = ({ onClose }: VideoVerificationProps) => {
+const VideoVerification = ({ onClose, phoneNumber }: VideoVerificationProps) => {
   const [status, setStatus] = useState<
     | "initial"
     | "instructions"
@@ -33,6 +34,15 @@ const VideoVerification = ({ onClose }: VideoVerificationProps) => {
   const streamRef = useRef<MediaStream | null>(null);
   const animationRef = useRef<number | null>(null);
 
+  // Проверить, не заблокирован ли профиль
+  useEffect(() => {
+    const blockedProfiles = JSON.parse(localStorage.getItem("blockedProfiles") || "{}");
+    if (blockedProfiles[phoneNumber]) {
+      setStatus("blocked");
+      setBlockReason(blockedProfiles[phoneNumber]);
+    }
+  }, [phoneNumber]);
+
   useEffect(() => {
     return () => {
       // Очистка при размонтировании
@@ -45,6 +55,23 @@ const VideoVerification = ({ onClose }: VideoVerificationProps) => {
       }
     };
   }, []);
+
+  // Функция для блокировки профиля
+  const blockProfile = (reason: string) => {
+    const blockedProfiles = JSON.parse(localStorage.getItem("blockedProfiles") || "{}");
+    blockedProfiles[phoneNumber] = reason;
+    localStorage.setItem("blockedProfiles", JSON.stringify(blockedProfiles));
+    setBlockReason(reason);
+  };
+
+  // Функция для маскирования номера телефона
+  const maskPhoneNumber = (phone: string) => {
+    if (phone.length <= 10) return phone;
+    const firstPart = phone.substring(0, 5);
+    const lastPart = phone.substring(phone.length - 5);
+    const maskedPart = "*".repeat(phone.length - 10);
+    return `${firstPart}${maskedPart}${lastPart}`;
+  };
 
   const startInstructions = () => {
     setStatus("instructions");
@@ -74,7 +101,7 @@ const VideoVerification = ({ onClose }: VideoVerificationProps) => {
     } catch (error) {
       console.error("Error accessing camera:", error);
       setStatus("error");
-      setBlockReason("Не удалось получить доступ к камере");
+      blockProfile("Не удалось получить доступ к камере");
     }
   };
 
@@ -131,46 +158,69 @@ const VideoVerification = ({ onClose }: VideoVerificationProps) => {
       
       // Имитация проверки на сервере с различными возможными результатами
       setTimeout(() => {
+        // Получим все верифицированные профили
+        const verifiedProfiles = JSON.parse(localStorage.getItem("verifiedProfiles") || "{}");
+        
         // Случайный результат для демонстрации возможных сценариев
+        // В реальной системе здесь было бы API, проверяющее биометрию
         const resultType = Math.floor(Math.random() * 5);
         
         switch (resultType) {
           case 0: // Успешно
-            setStatus("success");
-            localStorage.setItem("videoVerified", "true");
+            // Проверим, есть ли другие профили с этим лицом
+            const matches = Object.keys(verifiedProfiles).filter(
+              phone => phone !== phoneNumber && verifiedProfiles[phone] === true
+            );
             
-            toast({
-              title: "Верификация успешна",
-              description: "Вы успешно прошли проверку",
-            });
-            
-            setTimeout(() => {
-              onClose();
-            }, 2000);
+            if (matches.length > 0) {
+              // Если найдены совпадения, показываем дубликат
+              setStatus("duplicate");
+              const matchedPhone = matches[0];
+              setDuplicatePhone(maskPhoneNumber(matchedPhone));
+              blockProfile(`Дубликат профиля ${maskPhoneNumber(matchedPhone)}`);
+            } else {
+              // Если совпадений нет, подтверждаем успешную верификацию
+              setStatus("success");
+              verifiedProfiles[phoneNumber] = true;
+              localStorage.setItem("verifiedProfiles", JSON.stringify(verifiedProfiles));
+              localStorage.setItem("videoVerified", "true");
+              
+              toast({
+                title: "Верификация успешна",
+                description: "Вы успешно прошли проверку",
+              });
+              
+              setTimeout(() => {
+                onClose();
+              }, 2000);
+            }
             break;
             
-          case 1: // Дубликат в другом профиле
+          case 1: // Дубликат в другом профиле (симулируем)
             setStatus("duplicate");
-            setDuplicatePhone("+7999***01-74");
+            const fakePhone = "+7999123" + Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            setDuplicatePhone(maskPhoneNumber(fakePhone));
+            blockProfile(`Дубликат профиля ${maskPhoneNumber(fakePhone)}`);
             break;
             
           case 2: // Обнаружено фото вместо живого лица
             setStatus("fake_detected");
-            setBlockReason("Обнаружено фото на экране вместо живого лица");
+            blockProfile("Обнаружено фото на экране вместо живого лица");
             break;
             
           case 3: // Обнаружена гримаса
             setStatus("grimace_detected");
-            setBlockReason("Обнаружены изменения лица или гримасы");
+            blockProfile("Обнаружены изменения лица или гримасы");
             break;
             
           case 4: // Блокировка
             setStatus("blocked");
-            setBlockReason("Нарушены правила прохождения проверки");
+            blockProfile("Нарушены правила прохождения проверки");
             break;
             
           default:
             setStatus("error");
+            blockProfile("Неизвестная ошибка при проверке");
             break;
         }
       }, 3000);
@@ -356,14 +406,8 @@ const VideoVerification = ({ onClose }: VideoVerificationProps) => {
                   <span className="block mt-1">{blockReason}</span>
                 </>
               )}
-              {status === "error" && "Не удалось выполнить проверку. Пожалуйста, попробуйте снова."}
+              {status === "error" && "Не удалось выполнить проверку. Ваш профиль заблокирован."}
             </p>
-            
-            {status === "error" && (
-              <Button variant="outline" onClick={startCamera} className="mt-3">
-                Повторить
-              </Button>
-            )}
           </div>
         )}
       </div>
@@ -376,7 +420,7 @@ const VideoVerification = ({ onClose }: VideoVerificationProps) => {
         </Button>
       )}
       
-      {status !== "capturing" && status !== "scanning" && status !== "processing" && status !== "success" && (
+      {status !== "capturing" && status !== "scanning" && status !== "processing" && (
         <Button variant="outline" onClick={onClose} className="w-full">
           Закрыть
         </Button>
