@@ -99,3 +99,15 @@
     @apply bg-background text-foreground;
   }
 }
+
+.avito-button {
+  @apply bg-avito-blue text-white font-medium py-2 px-4 rounded hover:opacity-90 transition-opacity;
+}
+
+.avito-input {
+  @apply border border-avito-border rounded px-3 py-2 w-full focus:outline-none focus:ring-1 focus:ring-avito-blue;
+}
+
+.avito-card {
+  @apply border border-avito-border rounded-md overflow-hidden hover:shadow-md transition-shadow;
+}
